@@ -72,7 +72,6 @@ def index():
             return redirect(auth_url)
         if 'artistname' in request.form.keys():
             token = tuple(user['token'])
-#            token = tuple(rdio_oauth_tokens.find_one({'user_key': current_user.get_id()})['token'])
             rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET), token)
             search_artist = request.form['artistname']
             search_result = rdio.call('search',
