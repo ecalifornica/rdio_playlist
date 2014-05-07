@@ -1,0 +1,10 @@
+*.pyc
+venv
+examples
+bootstrap
+*.swp
+*.md
+flask_1.py
+README
+test*
+static
