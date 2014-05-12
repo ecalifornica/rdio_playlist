@@ -4,7 +4,7 @@ from rdio import Rdio
 from pymongo import MongoClient
 import os
 app = Flask(__name__)
-app.config['DEBUG'] = False
+app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
 CONSUMER_SECRET = os.environ['RDIO_SECRET']
 CONSUMER_KEY = os.environ['RDIO_KEY']
@@ -52,12 +52,23 @@ oauth_dancer = oauth_placeholder()
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    print('index route')
     print('is authenticated: {}'.format(current_user.is_authenticated()))
+    playlist_url = None
+    artists=[]
+    playlists=[]
     if current_user.is_authenticated():
         sign_in = False
         user = rdio_oauth_tokens.find_one({'user_key': current_user.get_id()})
         user_icon = user['user_icon']
         user_name = user['user_name']
+        try:
+            user_playlists = user['previous_playlists']
+            for playlist in user_playlists:
+                print playlist
+        except:
+            print('no playlists')
+            pass
         print('user name: {}'.format(user_name))
     else:
         sign_in = True
@@ -84,11 +95,13 @@ def index():
                     'name': artist['name'],
                     'url': artist['shortUrl'],
                     'key': artist['key']})
+            '''
             return render_template('index.html',
                                    artists=artists,
                                    sign_in=sign_in,
                                    user_icon=user_icon,
                                    user_name=user_name)
+            '''
         if 'create playlist' in request.form.keys():
             token = tuple(rdio_oauth_tokens.find_one(
                 {'user_key': current_user.get_id()})['token'])
@@ -105,30 +118,47 @@ def index():
             for track in artist_top_ten_tracks['result']:
                 api_call_key_list.append(track['key'])
             playlist = ','.join(api_call_key_list)
-            rdio.call('createPlaylist', {
+            created_playlist = rdio.call('createPlaylist', {
                 'name': '{}\'s Top Ten'.format(artist),
                 'description': 'Top ten tracks by play count',
                 'tracks': playlist})
+            print(created_playlist)
+            playlist_url = created_playlist['result']['url']
+            user = rdio_oauth_tokens.find_one({'user_key': current_user.get_id()})
+            print(user)
+            if 'previous_playlists' not in user.keys():
+                print('previous playlists not in user keys')
+#                rdio_oauth_tokens.insert({user['previous_playlists'] = []})
+            else:
+                print('adding playlists to user, need to redo mongodb')
+                # should be an insert
+                user['previous_playlists'].append([artist, playlist_url])
+                print user['previous_playlists']
+            print(user)
+            return redirect('http://rdio.com{}'.format(playlist_url))
     if request.method == 'GET':
         if current_user.is_authenticated():
+            print('GET, user is authenticated')
             token = tuple(user['token'])
             rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET), token)
             sign_in = False
         if 'oauth_token' in request.args.keys():
+            print('GET, oauth token in request keys')
             rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET),
                         oauth_dancer.oauth_token)
             rdio.complete_authentication(request.args.get('oauth_verifier'))
             oauth_dancer.access_token = rdio.token
             rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET), rdio.token)
             user = rdio.call("currentUser")['result']
-            user_key, user_icon, user_name = user['key'], user['icon'],
-            user['firstName']
+            user_key, user_icon, user_name = user['key'], user['icon'], user['firstName']
             if rdio_oauth_tokens.find_one({'user_key': user_key}) is None:
+                print('user not in database')
                 print(rdio_oauth_tokens.insert({'user_key': user_key,
                                                 'token': rdio.token,
                                                 'user_icon': user_icon,
                                                 'user_name': user_name}))
             else:
+                print('user found in database')
                 pass
             session_user = flask_login_user(user_key)
             print('LOGGING IN {}'.format(session_user))
@@ -136,8 +166,9 @@ def index():
             session['logged_in'] = True
             sign_in = False
             return redirect('/')
-    return render_template('index.html', sign_in=sign_in, user_icon=user_icon,
-                           user_name=user_name)
+    return render_template('index.html', artists=artists, sign_in=sign_in, user_icon=user_icon,
+                           user_name=user_name, playlist_url=playlist_url)
+
 
 
 if __name__ == '__main__':
