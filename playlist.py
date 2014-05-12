@@ -17,7 +17,8 @@ print('MONGO_URL: {}'.format(MONGO_URL))
 #mongohq_db.mongohq_test_collection.insert({"testdoc":"totaltest"})
 #print mongohq_db.mongohq_test_collection.find()[0]
 dbclient = MongoClient(MONGO_URL)
-db = dbclient.top_tracks
+#db = dbclient.top_tracks
+db = dbclient.app25053168
 rdio_oauth_tokens = db.oauth_tokens
 login_manager = LoginManager()
 login_manager.init_app(app)
