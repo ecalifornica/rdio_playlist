@@ -1,0 +1,31 @@
+body {
+    font-family: helvetica;
+    padding-top:0px;
+}
+
+.introduction {
+    font-size: 21px;
+    font-weight: 200;
+}
+
+.searchbutton {
+    margin-top: 10px;
+    background-color: #008FD5;
+}
+
+.searchbox {
+    height:44px;
+    font-size:15pt;
+    text-align:center;
+    margin-top:20px;
+}
+
+.createbutton {
+    margin-left:10px;
+    background-color: #FFFFFF;
+    text-align: right;
+}
+
+.createbutton:hover {
+    background-color: #008FD5;
+}

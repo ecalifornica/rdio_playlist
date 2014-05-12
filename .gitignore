@@ -7,5 +7,5 @@ bootstrap
 flask_1.py
 README
 test*
-static
 *.notes
+cruft
