@@ -2,6 +2,7 @@ from flask import (Flask, session, render_template, request, redirect)
 from flask_login import LoginManager, login_user, current_user
 from rdio import Rdio
 import pymongo
+from urlparse import urlparse
 from pymongo import MongoClient
 import os
 app = Flask(__name__)
