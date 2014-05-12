@@ -12,11 +12,11 @@ CONSUMER_SECRET = os.environ['RDIO_SECRET']
 CONSUMER_KEY = os.environ['RDIO_KEY']
 MONGO_URL = os.environ.get('MONGOHQ_URL')
 print('MONGO_URL: {}'.format(MONGO_URL))
-conn = pymongo.Connection(MONGO_URL)
-mongohq_db = conn[urlparse(MONGO_URL).path[1:]]
-mongohq_db.mongohq_test_collection.insert({"testdoc":"totaltest"})
-print mongohq_db.mongohq_test_collection.find()[0]
-dbclient = MongoClient()
+#conn = pymongo.Connection(MONGO_URL)
+#mongohq_db = conn[urlparse(MONGO_URL).path[1:]]
+#mongohq_db.mongohq_test_collection.insert({"testdoc":"totaltest"})
+#print mongohq_db.mongohq_test_collection.find()[0]
+dbclient = MongoClient(MONGO_URL)
 db = dbclient.top_tracks
 rdio_oauth_tokens = db.oauth_tokens
 login_manager = LoginManager()
