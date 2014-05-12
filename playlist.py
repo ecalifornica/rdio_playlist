@@ -8,6 +8,11 @@ app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
 CONSUMER_SECRET = os.environ['RDIO_SECRET']
 CONSUMER_KEY = os.environ['RDIO_KEY']
+MONGO_URL = os.environ.get('MONGOHQ_URL')
+conn = pymongo.Connection(MONGO_URL)
+mongohq_db = conn[urlparse(MONGO_URL).path[1:]]
+mongohq_db.mongohq_test_collection.insert({"testdoc":"totaltest"})
+print mongohq_db.mongohq_test_collection.find()[0]
 dbclient = MongoClient()
 db = dbclient.top_tracks
 rdio_oauth_tokens = db.oauth_tokens
