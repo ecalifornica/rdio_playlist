@@ -28,10 +28,12 @@
     <div class="introduction text-center"style="text-align:center">
       <div class="container-fluid">
         <h1>RDIO TOP TEN</h1>
-        <p>Create a playlist of top tracks by play count</p>
+        <p>Create a playlist of top tracks by play count.</p>
         <!--<p>Create an Rdio playlist of an artist's top tracks. First connect to Rdio, then search for an artist.</p>-->
 {% if sign_in %}
-<p>Connect to search</p>
+          <p>Rdio artist pages list top tracks, but each song must be started separately.</p><p>This page creates a playlist of those tracks allowing you to listen to them all without having to click play for each track.</p>
+          <p>I use this when discovering new artists.</p>
+<p>Connect to search.</p>
 </div>
 </div>
 {% else %}
@@ -40,7 +42,9 @@
 <p>
 <!--<a class="btn btn-primary btn-lg" role="button">Search &raquo;</a>-->
 <button class="btn btn-primary btn-lg searchbutton" type="submit" value="Search">Search</button>
+<!--
 <button class="btn btn-primary btn-lg searchbutton" type="submit" value="Lucky">Feeling Lucky</button>
+-->
 </p>
 </form>
       </div>

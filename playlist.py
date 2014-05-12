@@ -10,15 +10,24 @@ app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
 CONSUMER_SECRET = os.environ['RDIO_SECRET']
 CONSUMER_KEY = os.environ['RDIO_KEY']
-MONGO_URL = os.environ.get('MONGOHQ_URL')
-print('MONGO_URL: {}'.format(MONGO_URL))
+try:
+    MONGO_URL = os.environ.get('MONGOHQ_URL')
+    if MONGO_URL is None:
+        print('not on heroku')
+        dbclient = MongoClient()
+        db = dbclient.top_tracks
+    else:
+        print('MONGO_URL: {}'.format(MONGO_URL))
+        dbclient = MongoClient(MONGO_URL)
+        db = dbclient.app25053168
 #conn = pymongo.Connection(MONGO_URL)
 #mongohq_db = conn[urlparse(MONGO_URL).path[1:]]
 #mongohq_db.mongohq_test_collection.insert({"testdoc":"totaltest"})
 #print mongohq_db.mongohq_test_collection.find()[0]
-dbclient = MongoClient(MONGO_URL)
-#db = dbclient.top_tracks
-db = dbclient.app25053168
+except:
+    print('not on heroku')
+    dbclient = MongoClient()
+    db = dbclient.top_tracks
 rdio_oauth_tokens = db.oauth_tokens
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -146,6 +155,7 @@ def index():
             print(user)
             return redirect('http://rdio.com{}'.format(playlist_url))
     if request.method == 'GET':
+        print('method is GET')
         if current_user.is_authenticated():
             print('GET, user is authenticated')
             token = tuple(user['token'])
