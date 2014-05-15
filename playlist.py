@@ -97,7 +97,7 @@ def index():
         print request.form.keys()
         if 'signin' in request.form.keys():
             rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET))
-            auth_url = rdio.begin_authentication('http://www.blametommy.com:5000')
+            auth_url = rdio.begin_authentication('http://www.rdiotopten.com/')
             oauth_dancer.oauth_token = rdio.token
             return redirect(auth_url)
         if 'artistname' in request.form.keys():
