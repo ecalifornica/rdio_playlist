@@ -29,3 +29,9 @@ body {
 .createbutton:hover {
     background-color: #008FD5;
 }
+
+.description {
+    font-size: 75%;
+    color:#837E7C;
+    margin-bottom:30px;
+}

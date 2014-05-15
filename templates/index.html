@@ -1,83 +1,80 @@
 {% extends "layout.html" %}
 {% block body %}
 <!--<div class="navbar navbar-fixed-top" role="navigation">-->
-    <div class="navbar" role="navigation">
-      <div class="container-fluid">
-          <div class="navbar-header">
-          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <!--<a class="navbar-brand" href="#">Top Ten</a>-->
-        </div>
-        <div>
+    <div class="navbar">
+      <div class="container">
 {% if sign_in %}
-          <form class="navbar-form navbar-right" role="form" action="/" method="post">
-            <button type="submit" class="btn btn-success" name="signin">CONNECT TO RDIO</button>
-          </form>
 {% else %}
-            <span class="navbar-form navbar-right">Hello {{ user_name }}</span>
 
+        <form id="logout" action="/" method=post>
+            <input type="hidden" name="logout" value="logout">
+            <span class="navbar-form navbar-right">Hello {{ user_name }}. <a href="#" onclick="$(this).closest('form').submit()">Logout</a></span>
+        </form>
 {% endif %}
-        </div><!--/.navbar-collapse -->
       </div>
       </div>
 
     <div class="introduction text-center"style="text-align:center">
       <div class="container-fluid">
         <h1>RDIO TOP TEN</h1>
-        <p>Create a playlist of top tracks by play count.</p>
-        <!--<p>Create an Rdio playlist of an artist's top tracks. First connect to Rdio, then search for an artist.</p>-->
+        <p>Create playlists of top tracks by play count.</p>
 {% if sign_in %}
-          <p>Rdio artist pages list top tracks, but each song must be started separately.</p><p>This page creates a playlist of those tracks allowing you to listen to them all without having to click play for each track.</p>
-          <p>I use this when discovering new artists.</p>
-<p>Connect to search.</p>
+<div class="row">
+<div class="col-sm-3">
+</div>
+<div class="col-sm-6">
+          <p class="description">Rdio artist pages list top tracks, but each song must be started separately.
+This page creates a playlist of those tracks allowing you to listen to them all without having to click play for each track.
+<br>I use this when discovering new artists.
+</p>
+</div>
+<div class="col-sm-3">
 </div>
 </div>
+          <form role="form" action="/" method="post">
+
+            <button type="submit" class="btn btn-success" name="signin">CONNECT TO RDIO TO SEARCH</button>
+          </form>
+</div>
+</div>
+
 {% else %}
 <form action="/" method="post">
 <input class="searchbox" type=text size=25 name=artistname placeholder="FIND AN ARTIST">
 <p>
-<!--<a class="btn btn-primary btn-lg" role="button">Search &raquo;</a>-->
 <button class="btn btn-primary btn-lg searchbutton" type="submit" value="Search">Search</button>
-<!--
-<button class="btn btn-primary btn-lg searchbutton" type="submit" value="Lucky">Feeling Lucky</button>
--->
 </p>
 </form>
-      </div>
-    </div>
+</div>
+</div>
 
     <div class="container">
+
       <div class="row">
+
         <div class="col-sm-12 text-center">
           <h2>Results</h2>
 <form action="/" method="post" name="create">
 {% for artist in artists %}
 <a href="{{ artist.url }}">{{ artist.name }}</a><button class="btn btn-sm createbutton" type=submit value="{{ artist.key }}" name="create playlist">Create Playlist</button><br>
 {% endfor %}
-<!--
-<a href="#" onclick="document.create.submit(); return false;">+</a>
--->
 </form>
         </div>
-            <!--
-        <div class="col-sm-4">
-          <h2>Previous Playlists</h2>
-          <p>Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
-          <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
-        </div>
-          -->
+
       </div>
+</div>
 {% endif %}
+<div class="container">
+<div class="row">
+<div class="col-sm-12">
 
       <hr>
 
       <footer>
         <p><a href="https://github.com/ecalifornica/rdio_playlist">github</a> / <a href="https://twitter.com/ecalifornica">@ecalifornica</a></p>
       </footer>
+</div>
+</div>
     </div> <!-- /container -->
 
 {% endblock %}

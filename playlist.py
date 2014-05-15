@@ -1,5 +1,5 @@
 from flask import (Flask, session, render_template, request, redirect)
-from flask_login import LoginManager, login_user, current_user
+from flask_login import LoginManager, login_user, current_user, logout_user
 from rdio import Rdio
 import pymongo
 import urlparse
@@ -94,9 +94,10 @@ def index():
         user_name = None
     if request.method == 'POST':
         print('user name: {}'.format(user_name))
+        print request.form.keys()
         if 'signin' in request.form.keys():
             rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET))
-            auth_url = rdio.begin_authentication('http://www.rdiotopten.com/')
+            auth_url = rdio.begin_authentication('http://www.blametommy.com:5000')
             oauth_dancer.oauth_token = rdio.token
             return redirect(auth_url)
         if 'artistname' in request.form.keys():
@@ -154,6 +155,10 @@ def index():
                 print user['previous_playlists']
             print(user)
             return redirect('http://rdio.com{}'.format(playlist_url))
+        if 'logout' in request.form.keys():
+            print('should log out')
+            logout_user()
+            return redirect('/')
     if request.method == 'GET':
         print('method is GET')
         if current_user.is_authenticated():
