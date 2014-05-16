@@ -53,11 +53,19 @@ This page creates a playlist of those tracks allowing you to listen to them all 
       <div class="row">
 
         <div class="col-sm-12 text-center">
-          <h2>Results</h2>
 <form action="/" method="post" name="create">
-{% for artist in artists %}
+{% for artist in artists[:1] %}
+          <h4 class="best">Best Result</h4>
 <a href="{{ artist.url }}">{{ artist.name }}</a><button class="btn btn-sm createbutton" type=submit value="{{ artist.key }}" name="create playlist">Create Playlist</button><br>
 {% endfor %}
+            {% if artists %}
+            <hr style="width:100px;">
+          <h4 class="others">Other Matches</h4>
+            {% endif %}
+{% for artist in artists[1:] %}
+<a href="{{ artist.url }}">{{ artist.name }}</a><button class="btn btn-sm createbutton" type=submit value="{{ artist.key }}" name="create playlist">Create Playlist</button><br>
+{% endfor %}
+
 </form>
         </div>
 
