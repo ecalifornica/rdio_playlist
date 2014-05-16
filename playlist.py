@@ -8,6 +8,9 @@ import os
 app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
+on_heroku = False
+if 'ON_HEROKU' in os.environ:
+    on_heroku = True
 CONSUMER_SECRET = os.environ['RDIO_SECRET']
 CONSUMER_KEY = os.environ['RDIO_KEY']
 try:
