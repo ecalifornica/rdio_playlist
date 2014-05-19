@@ -2,8 +2,11 @@ import logging
 import os
 from rdio import Rdio
 import pymongo
+import flask
 from flask import (Flask, session, render_template, request, redirect)
 from flask_login import LoginManager, login_user, current_user, logout_user
+import lib
+
 with open('playlist.log', 'w'):
     pass
 logger = logging.getLogger(__name__)
@@ -34,6 +37,7 @@ else:
     dbclient = pymongo.MongoClient()
     db = dbclient.top_tracks
 rdio_oauth_tokens = db.oauth_tokens
+oauth_temp_db = db.temp_tokens
 login_manager = LoginManager()
 login_manager.init_app(app)
 
@@ -79,11 +83,9 @@ def index():
     #print('is authenticated: {}'.format(current_user.is_authenticated()))
     playlist_url = None
     artists=[]
-    playlists=[]
     if current_user.is_authenticated():
         sign_in = False
         user = rdio_oauth_tokens.find_one({'user_key': current_user.get_id()})
-        user_icon = user['user_icon']
         user_name = user['user_name']
         user_key = user['user_key']
         token = tuple(user['token'])
@@ -91,20 +93,27 @@ def index():
         logger.debug('{} ({}) is authenticated'.format(user_name, user_key))
     else:
         sign_in = True
-        user_icon = None
         user_name = None
     if request.method == 'POST':
         logger.debug('Method: POST, user: {}'.format(user_name))
         if 'signin' in request.form.keys():
-            logger.debug('Sign in')
+            logger.debug('Signing in')
             rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET))
             auth_url = rdio.begin_authentication(OAUTH_CALLBACK_URL)
-            oauth_dancer.oauth_token = rdio.token
+            # Mongo instead of shared object.
+            logger.debug('auth url: {}'.format(auth_url))
+            session_id = flask.request.cookies['session']
+            logger.debug('session_id: {}'.format(session_id))
+            logger.debug('rdio.token: {}'.format(rdio.token[0]))
+            inserted_temp_token = oauth_temp_db.insert({'oauth token': rdio.token[0], 'oauth_dance_token': rdio.token})
+            logger.debug('inserted token: {}'.format(inserted_temp_token))
+            #oauth_dancer.oauth_token = rdio.token
+            logger.debug('Redirecting to Rdio oauth')
             return redirect(auth_url)
         if 'artistname' in request.form.keys():
             logger.debug('artist name')
-            token = tuple(user['token'])
-            rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET), token)
+            #token = tuple(user['token'])
+            #rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET), token)
             search_artist = request.form['artistname']
             search_result = rdio.call('search',
                                       {'query': search_artist,
@@ -149,28 +158,31 @@ def index():
             logger.debug('User logged out.')
             return redirect('/')
     if request.method == 'GET':
+        # return lib.index_GET(Rdio, oauth_temp_db, rdio_oauth_tokens, sign_in, user_name, playlist_url, artists)
         logger.debug('Method: GET')
-        '''
-        if current_user.is_authenticated():
-            logger.debug('User {} is authenticated.'.format(user['user_key']))
-            token = tuple(user['token'])
-            rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET), token)
-            sign_in = False
-        '''
+        
+
         if 'oauth_token' in request.args.keys():
             logger.debug('Oauth callback.')
+            '''
+            callback_verifier = request.args.get('oauth_verifier')
+            callback_token = request.args.get('oauth_token')
+            access_token = lib.rdio_oauth(callback_token, callback_verifier, oauth_temp_db)
+            '''
+            access_token = lib.rdio_access_token(request, oauth_temp_db)
+            '''
             rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET),
                         oauth_dancer.oauth_token)
             rdio.complete_authentication(request.args.get('oauth_verifier'))
             oauth_dancer.access_token = rdio.token
-            rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET), rdio.token)
+            '''
+            rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET), access_token)
             user = rdio.call("currentUser")['result']
-            user_key, user_icon, user_name = user['key'], user['icon'], user['firstName']
+            user_key, user_name = user['key'], user['firstName']
             if rdio_oauth_tokens.find_one({'user_key': user_key}) is None:
                 logger.debug('User not in database, inserting:')
                 logger.debug(rdio_oauth_tokens.insert({'user_key': user_key,
                                                 'token': rdio.token,
-                                                'user_icon': user_icon,
                                                 'user_name': user_name}))
             else:
                 logger.debug('User found in database.')
@@ -181,7 +193,7 @@ def index():
             session['logged_in'] = True
             sign_in = False
             return redirect('/')
-    return render_template('index.html', artists=artists, sign_in=sign_in, user_icon=user_icon,
+    return render_template('index.html', artists=artists, sign_in=sign_in,
                            user_name=user_name, playlist_url=playlist_url)
 
 
