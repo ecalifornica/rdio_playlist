@@ -3,7 +3,6 @@ import os
 from rdio import Rdio
 import pymongo
 import flask
-from flask import (Flask, session, render_template, request, redirect)
 from flask_login import LoginManager, login_user, current_user, logout_user
 import lib
 
@@ -15,38 +14,16 @@ handler = logging.FileHandler('playlist.log')
 handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 logger.debug('\nPlaylist start')
-app = Flask(__name__)
+app = flask.Flask(__name__)
 app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
 CONSUMER_SECRET = os.environ['RDIO_SECRET']
 CONSUMER_KEY = os.environ['RDIO_KEY']
-on_heroku = False
-if 'ON_HEROKU' in os.environ:
-    logger.debug('Running on Heroku production environment')
-    on_heroku = True
-    app.config['DEBUG'] = False
-    OAUTH_CALLBACK_URL = 'http://rdiotopten.com/'
-    MONGO_URL = os.environ.get('MONGOHQ_URL')
-    logger.debug('MONGO_URL: {}'.format(MONGO_URL))
-    dbclient = pymongo.MongoClient(MONGO_URL)
-    # Remove hardcoding.
-    db = dbclient.app25053168
-else:
-    app.config['DEBUG'] = True
-    logger.debug('Running in development environment')
-    OAUTH_CALLBACK_URL = 'http://blametommy.com:5000'
-    dbclient = pymongo.MongoClient()
-    db = dbclient.top_tracks
+#on_heroku = False
+db, OAUTH_CALLBACK_URL = lib.db_setup(app)
 rdio_oauth_tokens = db.oauth_tokens
 oauth_temp_db = db.temp_tokens
 login_manager = LoginManager()
 login_manager.init_app(app)
-
-
-class OauthPlaceholder(object):
-    def __init__(self):
-        self.oauth_token = None
-        self.access_token = None
-        self.userid = None
 
 
 class FlaskLoginUser():
@@ -74,13 +51,8 @@ def load_user(userid):
     return FlaskLoginUser(userid)
 
 
-oauth_dancer = OauthPlaceholder()
-
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    logger.debug('Index route')
-    #print('is authenticated: {}'.format(current_user.is_authenticated()))
     playlist_url = None
     artists=[]
     if current_user.is_authenticated():
@@ -94,77 +66,34 @@ def index():
     else:
         sign_in = True
         user_name = None
-    if request.method == 'POST':
+    if flask.request.method == 'POST':
         logger.debug('Method: POST, user: {}'.format(user_name))
-        if 'signin' in request.form.keys():
+        if 'signin' in flask.request.form.keys():
             logger.debug('Signing in')
             rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET))
             auth_url = rdio.begin_authentication(OAUTH_CALLBACK_URL)
-            # Mongo instead of shared object.
-            logger.debug('auth url: {}'.format(auth_url))
             session_id = flask.request.cookies['session']
-            logger.debug('session_id: {}'.format(session_id))
-            logger.debug('rdio.token: {}'.format(rdio.token[0]))
             inserted_temp_token = oauth_temp_db.insert({'oauth token': rdio.token[0], 'oauth_dance_token': rdio.token})
             logger.debug('inserted token: {}'.format(inserted_temp_token))
-            #oauth_dancer.oauth_token = rdio.token
             logger.debug('Redirecting to Rdio oauth')
-            return redirect(auth_url)
-        if 'artistname' in request.form.keys():
-            #token = tuple(user['token'])
-            #rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET), token)
-            search_artist = request.form['artistname']
-            logger.debug('Searching for {}'.format(search_artist))
-            search_result = rdio.call('search',
-                                      {'query': search_artist,
-                                       'types': 'Artist'})
-            search_result = search_result['result']['results']
-            # logger.debug(search_result)
-            artists = []
-            for artist in search_result:
-                if artist['length'] > 0:
-                    logger.debug(artist['length'])
-                artists.append({
-                    'name': artist['name'],
-                    'url': artist['shortUrl'],
-                    'key': artist['key']})
-        if 'create playlist' in request.form.keys():
-            logger.debug('create playlist')
+            return flask.redirect(auth_url)
+        if 'artistname' in flask.request.form.keys():
+            search_artist = flask.request.form['artistname']
+            artists = lib.create_artist_list(search_artist, rdio)
+        if 'create playlist' in flask.request.form.keys():
             token = tuple(rdio_oauth_tokens.find_one(
                 {'user_key': current_user.get_id()})['token'])
-            playlist_url = lib.create_rdio_playlist(token, request)
-            '''
-            rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET), token)
-            artist_key = request.form['create playlist']
-            search = rdio.call('get', {'keys': artist_key})
-            artist = search['result'][artist_key]['name']
-            artist_top_ten_tracks = rdio.call('getTracksForArtist',
-                                              {'artist': artist_key})
-            if len(artist_top_ten_tracks['result']) == 0:
-                # Flash message instead.
-                return 'could not find any tracks'
-            api_call_key_list = []
-            for track in artist_top_ten_tracks['result']:
-                api_call_key_list.append(track['key'])
-            playlist = ','.join(api_call_key_list)
-            created_playlist = rdio.call('createPlaylist', {
-                'name': '{}\'s Top Ten'.format(artist),
-                'description': 'Top ten tracks by play count',
-                'tracks': playlist})
-            playlist_url = created_playlist['result']['url']
-            #user = rdio_oauth_tokens.find_one({'user_key': current_user.get_id()})
-            logger.debug('Playlist created successfully.') 
-            '''
-            return redirect('http://rdio.com{}'.format(playlist_url))
-        if 'logout' in request.form.keys():
+            playlist_url = lib.create_rdio_playlist(token, flask.request)
+            return flask.redirect('http://rdio.com{}'.format(playlist_url))
+        if 'logout' in flask.request.form.keys():
             logout_user()
             logger.debug('User logged out.')
-            return redirect('/')
-    if request.method == 'GET':
+            return flask.redirect('/')
+    if flask.request.method == 'GET':
         logger.debug('Method: GET')
-        if 'oauth_token' in request.args.keys():
+        if 'oauth_token' in flask.request.args.keys():
             logger.debug('Oauth callback.')
-            access_token = lib.rdio_access_token(request, oauth_temp_db)
+            access_token = lib.rdio_access_token(flask.request, oauth_temp_db)
             rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET), access_token)
             user = rdio.call("currentUser")['result']
             user_key, user_name = user['key'], user['firstName']
@@ -179,12 +108,11 @@ def index():
             session_user = FlaskLoginUser(user_key)
             logger.debug('Logging in: {}'.format(session_user))
             login_user(session_user)
-            session['logged_in'] = True
+            flask.session['logged_in'] = True
             sign_in = False
-            return redirect('/')
-    return render_template('index.html', artists=artists, sign_in=sign_in,
+            return flask.redirect('/')
+    return flask.render_template('index.html', artists=artists, sign_in=sign_in,
                            user_name=user_name, playlist_url=playlist_url)
-
 
 
 if __name__ == '__main__':
