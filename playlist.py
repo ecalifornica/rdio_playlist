@@ -28,7 +28,7 @@ if 'ON_HEROKU' in os.environ:
     MONGO_URL = os.environ.get('MONGOHQ_URL')
     logger.debug('MONGO_URL: {}'.format(MONGO_URL))
     dbclient = pymongo.MongoClient(MONGO_URL)
-    # Do this without hardcoding?
+    # Remove hardcoding.
     db = dbclient.app25053168
 else:
     app.config['DEBUG'] = True
@@ -111,15 +111,15 @@ def index():
             logger.debug('Redirecting to Rdio oauth')
             return redirect(auth_url)
         if 'artistname' in request.form.keys():
-            logger.debug('artist name')
             #token = tuple(user['token'])
             #rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET), token)
             search_artist = request.form['artistname']
+            logger.debug('Searching for {}'.format(search_artist))
             search_result = rdio.call('search',
                                       {'query': search_artist,
                                        'types': 'Artist'})
             search_result = search_result['result']['results']
-            logger.debug(search_result)
+            # logger.debug(search_result)
             artists = []
             for artist in search_result:
                 if artist['length'] > 0:
@@ -132,6 +132,8 @@ def index():
             logger.debug('create playlist')
             token = tuple(rdio_oauth_tokens.find_one(
                 {'user_key': current_user.get_id()})['token'])
+            playlist_url = lib.create_rdio_playlist(token, request)
+            '''
             rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET), token)
             artist_key = request.form['create playlist']
             search = rdio.call('get', {'keys': artist_key})
@@ -152,30 +154,17 @@ def index():
             playlist_url = created_playlist['result']['url']
             #user = rdio_oauth_tokens.find_one({'user_key': current_user.get_id()})
             logger.debug('Playlist created successfully.') 
+            '''
             return redirect('http://rdio.com{}'.format(playlist_url))
         if 'logout' in request.form.keys():
             logout_user()
             logger.debug('User logged out.')
             return redirect('/')
     if request.method == 'GET':
-        # return lib.index_GET(Rdio, oauth_temp_db, rdio_oauth_tokens, sign_in, user_name, playlist_url, artists)
         logger.debug('Method: GET')
-        
-
         if 'oauth_token' in request.args.keys():
             logger.debug('Oauth callback.')
-            '''
-            callback_verifier = request.args.get('oauth_verifier')
-            callback_token = request.args.get('oauth_token')
-            access_token = lib.rdio_oauth(callback_token, callback_verifier, oauth_temp_db)
-            '''
             access_token = lib.rdio_access_token(request, oauth_temp_db)
-            '''
-            rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET),
-                        oauth_dancer.oauth_token)
-            rdio.complete_authentication(request.args.get('oauth_verifier'))
-            oauth_dancer.access_token = rdio.token
-            '''
             rdio = Rdio((CONSUMER_KEY, CONSUMER_SECRET), access_token)
             user = rdio.call("currentUser")['result']
             user_key, user_name = user['key'], user['firstName']
